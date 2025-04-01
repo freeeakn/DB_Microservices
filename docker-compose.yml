@@ -1,0 +1,59 @@
+services:
+  auth-service:
+    build:
+      context: ./auth_service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_SERVER=db
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_NAME=auth_db
+    depends_on:
+      - db
+    networks:
+      - auth-network
+
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./auth_service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      /bin/bash -c "
+      /opt/mssql/bin/sqlservr & 
+      sleep 30 && 
+      /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = ''auth_db'') CREATE DATABASE auth_db' && 
+      /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -d auth_db -i /docker-entrypoint-initdb.d/init.sql
+      "
+    networks:
+      - auth-network
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8080
+    depends_on:
+      - auth-service
+    networks:
+      - auth-network
+
+volumes:
+  mssql-data:
+
+networks:
+  auth-network:
+    driver: bridge
