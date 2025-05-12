@@ -1,59 +1,58 @@
 services:
-  auth-service:
-    build:
-      context: ./auth_service
-      dockerfile: Dockerfile
+  gateway:
+    build: ./api-gateway
     ports:
-      - "8080:8080"
-    environment:
-      - DB_SERVER=db
-      - DB_USER=sa
-      - DB_PASSWORD=YourStrong@Passw0rd
-      - DB_NAME=auth_db
+      - "${GATEWAY_PORT}:3000"
+    env_file:
+      - .env
     depends_on:
-      - db
-    networks:
-      - auth-network
+      - rabbitmq
+      - auth-service
+      - chat-service
 
-  db:
-    build:
-      context: ./db
-      dockerfile: Dockerfile
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    depends_on:
+      - sql-server
+      - rabbitmq
+
+  chat-service:
+    build: ./chat-service
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - rabbitmq
+
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Passw0rd
-      - MSSQL_PID=Express
+      SA_PASSWORD: "YourStrong@Passw0rd"
+      ACCEPT_EULA: "Y"
     ports:
       - "1433:1433"
-    volumes:
-      - mssql-data:/var/opt/mssql
-      - ./auth_service/init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: >
-      /bin/bash -c "
-      /opt/mssql/bin/sqlservr & 
-      sleep 30 && 
-      /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = ''auth_db'') CREATE DATABASE auth_db' && 
-      /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -d auth_db -i /docker-entrypoint-initdb.d/init.sql
-      "
-    networks:
-      - auth-network
 
-  gateway:
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
+  mongo:
+    image: mongo:latest
     ports:
-      - "3000:3000"
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      - AUTH_SERVICE_URL=http://auth-service:8080
-    depends_on:
-      - auth-service
-    networks:
-      - auth-network
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
 
 volumes:
-  mssql-data:
-
-networks:
-  auth-network:
-    driver: bridge
+  mongo-data:
