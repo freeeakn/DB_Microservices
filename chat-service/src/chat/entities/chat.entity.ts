@@ -22,4 +22,5 @@ export class Chat extends Document {
   messages: Message[];
 }
 
+export const MessageSchema = SchemaFactory.createForClass(Message);
 export const ChatSchema = SchemaFactory.createForClass(Chat);
