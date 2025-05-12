@@ -12,11 +12,11 @@
 
  **Gateway: TypeScript, NestJs, JWT**
 
- **Auth Servic: Go, Gin, GORM, MSSQL**
+ **Auth Servic: TypeScript, NestJs, JWT, MSSQL**
 
- **Chat Service: Python, FastAPI, PyMongo, RabbitMQ**
+ **Chat Service: TypeScript, NestJs, MongoDB**
 
- **Инфраструктура: Docker, Prometheus, Grafana**
+ **Инфраструктура: Docker, Prometheus, Grafana, RabbitMQ**
 
 ### Архитектурная диаграмма (Deployment Diagram)
 
