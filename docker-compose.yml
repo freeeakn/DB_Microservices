@@ -2,7 +2,7 @@ services:
   gateway:
     build: ./api-gateway
     ports:
-      - "${GATEWAY_PORT}:3000"
+      - "3000:3000"
     env_file:
       - .env
     depends_on:
@@ -42,17 +42,27 @@ services:
     image: mongo:latest
     ports:
       - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:4-management
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
+  
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  
+  grafana:
+    image: grafana/grafana
+    ports:
+      - '3003:3000'
 
 volumes:
   mongo-data:

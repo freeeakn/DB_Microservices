@@ -3,10 +3,10 @@ global:
 scrape_configs:
   - job_name: 'auth-service'
     static_configs:
-      - targets: ['auth-service:3000']
+      - targets: ['auth-service:3001']
   - job_name: 'chat-service'
     static_configs:
-      - targets: ['chat-service:3000']
+      - targets: ['chat-service:3002']
   - job_name: 'api-gateway'
     static_configs:
       - targets: ['gateway:3000']

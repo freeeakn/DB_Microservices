@@ -19,7 +19,7 @@ export class ChatService {
   ): Promise<Chat> {
     try {
       const chat = await this.chatModel.findById(chatId);
-      if (!chat) throw new NotFoundException('Chat with this id nor found');
+      if (!chat) throw new NotFoundException('Chat with this id not found');
       chat.messages.push({ text, sender, timestamp: new Date() });
       return chat.save();
     } catch (e) {
@@ -31,7 +31,7 @@ export class ChatService {
   async getMessages(chatId: string) {
     try {
       const chat = await this.chatModel.findById(chatId);
-      if (!chat) throw new NotFoundException('Chat with this id nor found');
+      if (!chat) throw new NotFoundException('Chat with this id not found');
       return chat.messages;
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
