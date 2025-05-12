@@ -7,13 +7,16 @@ import { User } from './auth/entities/auth.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'mssql',
-      host: 'localhost',
-      port: 1433,
-      username: 'your_username',
-      password: 'your_password',
-      database: 'your_database',
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       entities: [User],
-      synchronize: true, // Используйте только в разработке
+      options: {
+        encrypt: false,
+      },
+      synchronize: true,
     }),
     AuthModule,
   ],
