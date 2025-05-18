@@ -1,54 +1,94 @@
+version: '3.8'
 services:
-  gateway:
-    build: ./api-gateway
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - rabbitmq
-      - auth-service
-      - chat-service
+  mongo:
+    image: mongo:8.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=YourStrong@Passw0rd
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://admin:YourStrong@Passw0rd@localhost:27017 --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my-network
 
-  auth-service:
-    build: ./auth-service
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    depends_on:
-      - sql-server
-      - rabbitmq
-
-  chat-service:
-    build: ./chat-service
-    ports:
-      - "3002:3002"
-    env_file:
-      - .env
-    depends_on:
-      - mongo
-      - rabbitmq
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - my-network
 
   sql-server:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=Strong@Passw0rd
+      - SA_PASSWORD=YourStrong@Passw0rd
       - MSSQL_PID=Express
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: /bin/bash -c "/opt/mssql/bin/sqlservr & sleep 30; /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -i /docker-entrypoint-initdb.d/init.sql; wait"
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -Q "SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "1433:1433"
+    networks:
+      - my-network
 
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-
-  rabbitmq:
-    image: rabbitmq:4-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+  chat-service:
+    build: ./chat-service
     environment:
-      RABBITMQ_DEFAULT_USER: "guest"
-      RABBITMQ_DEFAULT_PASS: "guest"
+      - MONGO_URL=mongodb://admin:YourStrong@Passw0rd@mongo:27017/chatdb?authSource=admin
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - my-network
+
+  auth-service:
+    build: ./auth-service
+    environment:
+      - SQL_SERVER_HOST=sql-server
+      - SQL_SERVER_PORT=1433
+      - SQL_SERVER_USERNAME=sa
+      - SQL_SERVER_PASSWORD=YourStrong@Passw0rd
+      - SQL_SERVER_DATABASE=authdb
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    networks:
+      - my-network
+
+  gateway:
+    build: ./api-gateway
+    depends_on:
+      - chat-service
+      - auth-service
+    ports:
+      - "3000:3000"
+    networks:
+      - my-network
+
+volumes:
+  mongo-data:
+
+networks:
+  my-network:
+    driver: bridge

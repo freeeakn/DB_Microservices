@@ -9,8 +9,8 @@ import { ChatController } from './chat.controller';
         name: 'CHAT_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-          queue: process.env.CHAT_QUEUE || 'chat_queue',
+          urls: ['amqp://guest:guest@rabbitmq:5672'],
+          queue: 'chat_queue',
           queueOptions: {
             durable: false,
           },
