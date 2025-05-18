@@ -33,8 +33,9 @@ services:
   sql-server:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
-      SA_PASSWORD: "YourStrong@Passw0rd"
-      ACCEPT_EULA: "Y"
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Strong@Passw0rd
+      - MSSQL_PID=Express
     ports:
       - "1433:1433"
 
@@ -51,18 +52,3 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
-  
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - '9090:9090'
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-  
-  grafana:
-    image: grafana/grafana
-    ports:
-      - '3003:3000'
-
-volumes:
-  mongo-data:

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ChatGateway } from './chat.gateway';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ChatController } from './chat.controller';
 
 @Module({
   imports: [
@@ -18,6 +18,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       },
     ]),
   ],
-  providers: [ChatGateway],
+  providers: [ChatController],
 })
 export class ChatModule {}
