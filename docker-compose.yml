@@ -1,24 +1,12 @@
-version: '3.8'
 services:
   mongo:
-    image: mongo:8.0
+    image: mongo:latest
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=YourStrong@Passw0rd
-    volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://admin:YourStrong@Passw0rd@localhost:27017 --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - my-network
+      - MONGO_INITDB_ROOT_PASSWORD=Strong@Passw0rd
 
   rabbitmq:
     image: rabbitmq:4.1-management
-    volumes:
-      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
@@ -27,68 +15,45 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    networks:
-      - my-network
 
   sql-server:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Passw0rd
+      - SA_PASSWORD=Strong@Passw0rd
       - MSSQL_PID=Express
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: /bin/bash -c "/opt/mssql/bin/sqlservr & sleep 30; /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -i /docker-entrypoint-initdb.d/init.sql; wait"
-    healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -Q "SELECT 1"
-      interval: 10s
-      timeout: 5s
-      retries: 5
     ports:
       - "1433:1433"
-    networks:
-      - my-network
 
   chat-service:
     build: ./chat-service
+    ports:
+      - "3002:3002"
     environment:
-      - MONGO_URL=mongodb://admin:YourStrong@Passw0rd@mongo:27017/chatdb?authSource=admin
+      - MONGO_URL=mongodb://admin:Strong@Passw0rd@mongo:27017/chatdb?authSource=admin
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     depends_on:
-      mongo:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - my-network
+      - mongo
+      - rabbitmq
 
   auth-service:
     build: ./auth-service
+    ports:
+      - "3001:3001"
     environment:
       - SQL_SERVER_HOST=sql-server
       - SQL_SERVER_PORT=1433
       - SQL_SERVER_USERNAME=sa
-      - SQL_SERVER_PASSWORD=YourStrong@Passw0rd
+      - SQL_SERVER_PASSWORD=Strong@Passw0rd
       - SQL_SERVER_DATABASE=authdb
     depends_on:
-      sql-server:
-        condition: service_healthy
-    networks:
-      - my-network
+      - sql-server
 
   gateway:
     build: ./api-gateway
     depends_on:
+      - rabbitmq
       - chat-service
       - auth-service
     ports:
       - "3000:3000"
-    networks:
-      - my-network
-
-volumes:
-  mongo-data:
-
-networks:
-  my-network:
-    driver: bridge
